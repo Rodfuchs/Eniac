@@ -1,0 +1,3 @@
+count(orders.order_id),delivery_status
+12962,"on time"
+759,delay
