@@ -1,0 +1,135 @@
+-- Set the database context
+USE magist;
+
+-- Question 2 & 3: Tech product sales and percentage of total sales
+SELECT 
+    ROUND(categorized_count) AS Tech_Sales,
+    ROUND((categorized_count / total_count * 100)) AS Tech_Percentage,
+    avg_ AS Avg_Price
+FROM (
+    SELECT 
+        COUNT(DISTINCT order_id) AS categorized_count,
+        AVG(order_items.price) AS avg_
+    FROM 
+        order_items
+    JOIN products 
+        ON order_items.product_id = products.product_id
+    JOIN product_category_name_translation 
+        ON products.product_category_name = product_category_name_translation.product_category_name
+    WHERE 
+        product_category_name_english IN ("computers_accessories", "telephony", "computers", "pc_gamer", "consoles_games")
+) AS categorized_total,
+(
+    SELECT 
+        COUNT(DISTINCT order_items.order_id) AS total_count
+    FROM 
+        order_items
+) AS total;
+
+-- Question 5: Duration in months between the first and last purchase
+SELECT 
+    TIMESTAMPDIFF(MONTH, MIN(order_purchase_timestamp), MAX(order_purchase_timestamp)) AS Months_Span
+FROM 
+    orders;
+
+-- Question 6: Number of sellers and percentage specializing in tech products
+SELECT 
+    ROUND(tech_sellers) AS Tech_Sellers,
+    ROUND(total_sellers) AS Total_Sellers,
+    ROUND(tech_sellers / total_sellers * 100) AS Tech_Sellers_Percentage
+FROM (
+    SELECT 
+        COUNT(DISTINCT sellers.seller_id) AS tech_sellers
+    FROM 
+        sellers
+    JOIN order_items 
+        ON sellers.seller_id = order_items.seller_id
+    JOIN products 
+        ON order_items.product_id = products.product_id
+    JOIN product_category_name_translation 
+        ON products.product_category_name = product_category_name_translation.product_category_name
+    WHERE 
+        product_category_name_english IN ("computers_accessories", "telephony", "computers", "pc_gamer", "consoles_games")
+) AS tech_sum,
+(
+    SELECT 
+        COUNT(DISTINCT seller_id) AS total_sellers
+    FROM 
+        sellers
+) AS total_sum;
+
+-- Question 7: Monthly average sales for tech products
+SELECT  
+    DATE_FORMAT(order_purchase_timestamp, '%Y-%m') AS Month,
+    ROUND(AVG(price), 2) AS Monthly_Avg_Sales
+FROM 
+    orders
+JOIN order_items 
+    ON orders.order_id = order_items.order_id
+JOIN products 
+    ON order_items.product_id = products.product_id
+JOIN product_category_name_translation 
+    ON products.product_category_name = product_category_name_translation.product_category_name
+WHERE 
+    product_category_name_english IN ("computers_accessories", "telephony", "computers", "pc_gamer", "consoles_games")
+GROUP BY 
+    Month
+ORDER BY 
+    Month;
+
+-- Average monthly sales by product category
+SELECT  
+    ROUND(AVG(price), 2) AS Avg_Sales,
+    product_category_name_english AS Category
+FROM 
+    orders
+JOIN order_items 
+    ON orders.order_id = order_items.order_id
+JOIN products 
+    ON order_items.product_id = products.product_id
+JOIN product_category_name_translation 
+    ON products.product_category_name = product_category_name_translation.product_category_name
+GROUP BY 
+    product_category_name_english;
+
+-- Question 8: Average delivery time in days
+SELECT 
+    AVG(DATEDIFF(order_delivered_customer_date, order_purchase_timestamp)) AS Avg_Delivery_Time
+FROM 
+    orders;
+
+-- Question 9: Delivery status distribution
+SELECT 
+    COUNT(orders.order_id) AS Orders_Count,
+    CASE 
+        WHEN DATEDIFF(order_delivered_customer_date, order_estimated_delivery_date) > 1 THEN 'Delayed'
+        ELSE 'On Time'
+    END AS Delivery_Status
+FROM 
+    orders
+JOIN order_items 
+    ON orders.order_id = order_items.order_id
+JOIN products 
+    ON order_items.product_id = products.product_id
+JOIN product_category_name_translation 
+    ON products.product_category_name = product_category_name_translation.product_category_name
+GROUP BY 
+    Delivery_Status;
+
+-- Detailed delay status breakdown
+SELECT
+    COUNT(order_id) AS Orders_Count,
+    CASE 
+        WHEN DATEDIFF(order_delivered_customer_date, order_estimated_delivery_date) <= 0 THEN "On Time"
+        WHEN DATEDIFF(order_delivered_customer_date, order_estimated_delivery_date) BETWEEN 1 AND 5 THEN "1-5 Day Delay"
+        WHEN DATEDIFF(order_delivered_customer_date, order_estimated_delivery_date) BETWEEN 6 AND 10 THEN "6-10 Day Delay"
+        WHEN DATEDIFF(order_delivered_customer_date, order_estimated_delivery_date) BETWEEN 11 AND 15 THEN "11-15 Day Delay"
+        WHEN DATEDIFF(order_delivered_customer_date, order_estimated_delivery_date) BETWEEN 16 AND 20 THEN "16-20 Day Delay"
+        WHEN DATEDIFF(order_delivered_customer_date, order_estimated_delivery_date) BETWEEN 21 AND 25 THEN "21-25 Day Delay"
+        WHEN DATEDIFF(order_delivered_customer_date, order_estimated_delivery_date) BETWEEN 26 AND 30 THEN "26-30 Day Delay"
+        ELSE ">30 Day Delay" 
+    END AS Delay_Status
+FROM 
+    orders
+GROUP BY 
+    Delay_Status;
