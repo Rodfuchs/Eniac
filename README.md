@@ -1,3 +1,4 @@
+![Alt text describing the image](image.png)
 # Magist Business Analysis Repository
 
 ## Description
